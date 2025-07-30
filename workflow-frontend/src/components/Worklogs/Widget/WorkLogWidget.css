@@ -1,0 +1,13 @@
+.widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 240px;
+  opacity: 0.5;
+}
+.widget:hover {
+  opacity: 1;
+}
