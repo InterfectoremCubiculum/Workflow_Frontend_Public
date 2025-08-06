@@ -3,17 +3,19 @@ import type { WorkSummaryQueriesParameters } from "../components/Summary/User/Us
 import type { ProjectsWorkSummaryQueriesParameters } from "../components/Summary/Project/ProjectsWorkSummaryQueriesParameters";
 import type { TeamsWorkSummaryQueriesParameters } from "../components/Summary/Team/TeamsWorkSummaryQueriesParameters";
 import type { UserWorkSummaryDto } from "../components/Summary/UserWorkSummaryDto";
+import type { UserWorkSummaryDayByDayDto } from "../components/Summary/UserWorkSummaryDayByDayDto";
 
-export const getWorkSummary = async (params: WorkSummaryQueriesParameters): Promise<{summary: UserWorkSummaryDto[], token: string}> => {
+export const getWorkSummary = async (params: WorkSummaryQueriesParameters): Promise<UserWorkSummaryDto[] | UserWorkSummaryDayByDayDto[]> => {
     try {
         
         const formattedParams = {
             periodStart: params.periodStart.toISOString().split('T')[0],
             periodEnd: params.periodEnd.toISOString().split('T')[0],
             userIds: params.userIds,
+            isDayByDay: params.isDayByDay,
         };
 
-        const response = await axiosInstance.post<{summary: UserWorkSummaryDto[], token: string}>("/summary", formattedParams);
+        const response = await axiosInstance.post<UserWorkSummaryDto[] | UserWorkSummaryDayByDayDto[]>("/summary", formattedParams);
         return response.data;
     } catch (error) {
         handleError('Get Work Summary', error);
@@ -21,15 +23,16 @@ export const getWorkSummary = async (params: WorkSummaryQueriesParameters): Prom
     }
 }
 
-export const getTeamsWorkSummary = async (params: TeamsWorkSummaryQueriesParameters): Promise<{summary: UserWorkSummaryDto[], token: string}> => {
+export const getTeamsWorkSummary = async (params: TeamsWorkSummaryQueriesParameters): Promise<UserWorkSummaryDto[] | UserWorkSummaryDayByDayDto[]> => {
     try {
         const formattedParams = {
             periodStart: params.periodStart.toISOString().split('T')[0],
             periodEnd: params.periodEnd.toISOString().split('T')[0],
             teamIds: params.teamIds,
+            isDayByDay: params.isDayByDay,
         };
 
-        const response = await axiosInstance.post<{summary: UserWorkSummaryDto[], token: string}>("/summary/team", formattedParams);
+        const response = await axiosInstance.post<UserWorkSummaryDto[] | UserWorkSummaryDayByDayDto[]>("/summary/team", formattedParams);
         return response.data;
     } catch (error) {
         handleError('Get Teams Work Summary', error);
@@ -37,15 +40,16 @@ export const getTeamsWorkSummary = async (params: TeamsWorkSummaryQueriesParamet
     }
 }
 
-export const getProjectsWorkSummary = async (params: ProjectsWorkSummaryQueriesParameters): Promise<{summary:UserWorkSummaryDto[], token: string}> => {
+export const getProjectsWorkSummary = async (params: ProjectsWorkSummaryQueriesParameters): Promise<UserWorkSummaryDto[] | UserWorkSummaryDayByDayDto[]> => {
     try {
         const formattedParams = {
             periodStart: params.periodStart.toISOString().split('T')[0],
             periodEnd: params.periodEnd.toISOString().split('T')[0],
             projectIds: params.projectIds,
+            isDayByDay: params.isDayByDay,
         };
 
-        const response = await axiosInstance.post<{summary:UserWorkSummaryDto[], token: string}>("/summary/project", formattedParams);
+        const response = await axiosInstance.post<UserWorkSummaryDto[] | UserWorkSummaryDayByDayDto[]>("/summary/project", formattedParams);
         return response.data;
     } catch (error) {
         handleError('Get Projects Work Summary', error);
@@ -53,14 +57,33 @@ export const getProjectsWorkSummary = async (params: ProjectsWorkSummaryQueriesP
     }
 }
 
-export const getCSVWorkSummary = async (token: string): Promise<string> => {
-    try {   
-        const response = await axiosInstance.get(`/summary/export/${token}`, {
-            responseType: 'blob',
-        });
+export const getCSVWorkSummary = async (params: WorkSummaryQueriesParameters): Promise<{ url: string; filename: string }> => {
+    try {
+        const formattedParams = {
+            periodStart: params.periodStart.toISOString().split('T')[0],
+            periodEnd: params.periodEnd.toISOString().split('T')[0],
+            userIds: params.userIds,
+            isDayByDay: params.isDayByDay,
+        };
+        const response = await axiosInstance.post<Blob>(
+            "/summary/export/",
+            formattedParams,
+            { responseType: 'blob' }
+        );
+        
+        const contentDisposition = response.headers["content-disposition"];
+        let filename = "work_summary.csv"; // fallback
 
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?(.+?)"?$/i);
+            if (match?.[1]) {
+                filename = decodeURIComponent(match[1]);
+            }
+        }
         const blob = new Blob([response.data], { type: 'text/csv' });
-        return URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
+        return { url, filename };
+
     } catch (error) {
         handleError('Get CSV Work Summary', error);
         throw error;

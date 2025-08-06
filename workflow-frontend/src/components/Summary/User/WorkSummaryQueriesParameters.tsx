@@ -5,35 +5,34 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   type SortingState,
-} from "@tanstack/react-table";
-import { getTeamsWorkSummary } from "../../../services/summaryService";
+} from '@tanstack/react-table';
+import UserManySelecting from "../../Searchings/UserSearching/UserManySelecting";
+import type { GetSearchedUserDto } from "../../Searchings/UserSearching/GetSearchedUserDto";
+import { getWorkSummary } from "../../../services/summaryService";
+import type { WorkSummaryQueriesParameters } from "./UserWorkSummaryQueriesParameters";
 import { Button, Form } from "react-bootstrap";
-import type { GetSearchedTeamDto } from "../../Searchings/TeamSearching/GetSearchedTeamDto";
-import TeamManySelecting from "../../Searchings/TeamSearching/TeamManySelecting";
-import type { TeamsWorkSummaryQueriesParameters } from "./TeamsWorkSummaryQueriesParameters";
-import type { UserWorkSummaryDto } from "../UserWorkSummaryDto";
 import moment from "moment";
-import type { WorkSummaryQueriesParameters } from "../User/UserWorkSummaryQueriesParameters";
-import { dayByDayColumnsMaker, downloadCSV, summaryColumnsMaker } from "../SummaryUtilits";
+import type { UserWorkSummaryDto } from "../UserWorkSummaryDto";
 import type { UserWorkSummaryDayByDayDto } from "../UserWorkSummaryDayByDayDto";
+import { dayByDayColumnsMaker, downloadCSV, summaryColumnsMaker } from "../SummaryUtilits";
 import { RenderTable } from "../RenderTable";
 
-const TeamSummaryComponent: React.FC = () => {
-  const [selectedTeams, setSelectedTeams] = useState<GetSearchedTeamDto[]>([]);
+const UserSummaryComponent: React.FC = () => {
+  const [selectedUser, setSelectedUser] = useState<GetSearchedUserDto[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [startDate, setStartDate] = useState(moment().startOf('month').format('YYYY-MM-DD'));
-  const [endDate, setEndDate] = useState(moment().endOf('day').format('YYYY-MM-DD'));
-  const [isDayByDay, setIsDayByDay] = useState(true);
   const [fetchedData, setFetchedData] = useState<UserWorkSummaryDto[] | UserWorkSummaryDayByDayDto[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [startDate, setStartDate] = useState<string>(moment().startOf('month').format('YYYY-MM-DD'));
+  const [endDate, setEndDate] = useState<string>(moment().endOf('day').format('YYYY-MM-DD'));
+  const [isDayByDay, setIsDayByDay] = useState(true);
   const [fetchedByDayDayStatus, setFetchedByDayDayStatus] = useState<boolean>(true);
 
-  const fetchTeamSummary = async () => {
+  const fetchUserSummary = async () => {
     setIsLoading(true);
     try {
       const params = handleSetParams();
       setFetchedByDayDayStatus(params.isDayByDay);
-      const data = await getTeamsWorkSummary(params) as UserWorkSummaryDto[];
+      const data = await getWorkSummary(params);
       setFetchedData(data);
     } finally {
       setIsLoading(false);
@@ -41,30 +40,23 @@ const TeamSummaryComponent: React.FC = () => {
   };
 
   const handleSetParams = ()  => {
-    const params: TeamsWorkSummaryQueriesParameters = {
+    const params: WorkSummaryQueriesParameters = {
       periodStart: new Date(startDate),
       periodEnd: new Date(endDate),
-      teamIds: selectedTeams.map(team => team.id),
+      userIds: selectedUser.map(user => user.userId),
       isDayByDay: isDayByDay,
     };
     return params;
   }
-
   const handleFindClick = () => {
-    fetchTeamSummary();
+    fetchUserSummary();
   };
 
   const handleDownload = async () => {
     const params = handleSetParams();
-
-    var csvParams: WorkSummaryQueriesParameters = {
-      periodStart: params?.periodStart ?? new Date(startDate),
-      periodEnd: params?.periodEnd ?? new Date(endDate),
-      userIds: fetchedData.map(user => user.userId),
-      isDayByDay: params?.isDayByDay ?? isDayByDay,
-    }
-    await downloadCSV(csvParams);
+    await downloadCSV(params);
   };
+
   const columnHelperDay = createColumnHelper<UserWorkSummaryDayByDayDto>();
   const columnHelperSummary = createColumnHelper<UserWorkSummaryDto>();
   const dayByDayColumns = useMemo(() => dayByDayColumnsMaker(columnHelperDay), [columnHelperDay]);
@@ -91,7 +83,7 @@ const TeamSummaryComponent: React.FC = () => {
   return (
     <div>
       <div style={{ width: '80vw' }}>
-        <TeamManySelecting onTeamSelect={setSelectedTeams} />
+        <UserManySelecting onUserSelect={setSelectedUser} />
         <div className="d-flex mb-3 align-items-end flex-wrap mt-3">
           <div className="me-2">
             <label className="form-label">Start date</label>
@@ -136,4 +128,5 @@ const TeamSummaryComponent: React.FC = () => {
   );
 };
 
-export default TeamSummaryComponent;
+
+export default UserSummaryComponent;

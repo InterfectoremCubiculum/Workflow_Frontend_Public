@@ -2,6 +2,7 @@ export interface UserWorkSummaryDto {
     userId: string;
     name: string;
     surname: string;
+    email: string;
     teamName: string;
     projectName: string;
     totalWorkHours: number;

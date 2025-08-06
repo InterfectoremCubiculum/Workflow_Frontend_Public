@@ -7,4 +7,6 @@ export interface UsersTimelineWorklogDto {
     endTime: Date | null;
     durationInSeconds: number | null;
     userId: string;
+    requestAction: boolean;
+    createdAt: Date;
 }

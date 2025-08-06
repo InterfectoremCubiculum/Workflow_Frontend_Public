@@ -2,27 +2,26 @@ import { Button } from "react-bootstrap";
 import React, { useEffect } from "react"; 
 import { useUser } from "../contexts/UserContext";
 import axiosInstance from "../../axiosConfig";
-import { BACKEND_BASE_URL } from "../config/environment";
-
 const LoginComponent: React.FC = () => {
     const { user, isLoadingUser, clearUser } = useUser();
+    const apiUrl = import.meta.env.VITE_API_URL;
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
-            if (event.origin !== window.location.origin) return;
-            if (event.data === "login-success") {
-                window.location.reload(); // lub odśwież userContext
-            }
-        };
+        if (event.origin !== window.location.origin) return;
+        if (event.data === "login-success") {
+            window.location.reload(); // lub odśwież userContext
+        }
+            };
 
-        window.addEventListener("message", handleMessage);
-        return () => window.removeEventListener("message", handleMessage);
+            window.addEventListener("message", handleMessage);
+            return () => window.removeEventListener("message", handleMessage);
     }, []);
 
 
     const handleLogin = () => {
-        const loginUrl = `${BACKEND_BASE_URL}/Auth/login`;
-        window.open(loginUrl, "popup", "width=600,height=600"); 
+        const loginUrl = `${apiUrl}/api/Auth/login`;
+        window.open(loginUrl, "popup", "width=600,height=600");
     };
 
 

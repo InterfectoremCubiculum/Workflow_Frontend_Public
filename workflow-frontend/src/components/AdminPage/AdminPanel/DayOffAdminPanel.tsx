@@ -13,7 +13,7 @@ const DayOffAdminPanel: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [sortBy, setSortBy] = useState<keyof typeof DayOffRequestOrderBy>("StartDate");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-    const [userId, setUserId] = useState<string | undefined>(undefined);
+    const [userId] = useState<string | undefined>(undefined);
 
     const sortOptions = [
         { value: "StartDate", label: "Start Date" },
@@ -65,58 +65,83 @@ const DayOffAdminPanel: React.FC = () => {
     }
  
     return (
-        <div>
-            <h2 className="text-xl font-bold mb-4">Day Off Requests</h2>
-            <div className="mb-3 row">
-                <div className="col-12 col-lg-2 text-start mb-3">
-                    <label className="mb-1">Sort by:</label>
-                    <Select
-                        options={sortOptions}
-                        value={sortOptions.find(option => option.value === sortBy)}
-                        onChange={(selected) => {
-                            if (selected) {
-                                setSortBy(selected.value as keyof typeof DayOffRequestOrderBy);
-                            }
-                        }}
-                    />
-                    <label className="mt-3 mb-1">Sort order:</label>
-                    <Select
-                        options={sortOrderOptions}
-                        value={sortOrderOptions.find(option => option.value === sortOrder)}
-                        onChange={(selected) => {
-                            if (selected) {
-                                setSortOrder(selected.value as "asc" | "desc");
-                            }
-                        }}
-                    />
-                </div>
-                <div className="col-12 col-lg-10 d-flex">
-                    <div className="w-100">
-                        {loading ? (
-                            <p>Loading...</p>
-                        ) : (
-                            
-                            <ul className="">
-                                {dayOffs.map((dayOff) => (
-                                    <li key={dayOff.id} className="border p-2 rounded">
-                                        <p>
-                                            <strong>Start:</strong> {dayOff.startDate} 
-                                            | <strong>End:</strong> {dayOff.endDate}
-                                            | <strong>Status:</strong> {DayOffRequestStatusLabels[dayOff.requestStatus]}
-                                            | <strong>Requested on:</strong> {new Date(dayOff.requestDate).toLocaleDateString()}
-                                            | <strong>Requested by:</strong> {dayOff.userName} {dayOff.userSurname}
-                                            <Button variant="success" className="me-3" onClick={() => handleStatusChange(dayOff.id, DayOffRequestStatus.Approved)}>Approved</Button>
-                                            <Button variant="danger" onClick={() => handleStatusChange(dayOff.id, DayOffRequestStatus.Rejected)}>Reject</Button>
-                                        </p>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                        </div>
-                </div>
+    <div>
+        <h2 className="fs-4 fw-bold mb-4">Day Off Requests</h2>
+
+        <div className="row mb-4">
+        <div className="col-12 col-lg-3 mb-4 mb-lg-0">
+            <div className="mb-3">
+            <label className="form-label fw-semibold">Sort by:</label>
+            <Select
+                options={sortOptions}
+                value={sortOptions.find(option => option.value === sortBy)}
+                onChange={(selected) => {
+                if (selected) {
+                    setSortBy(selected.value as keyof typeof DayOffRequestOrderBy);
+                }
+                }}
+            />
+            </div>
+
+            <div>
+            <label className="form-label fw-semibold">Sort order:</label>
+            <Select
+                options={sortOrderOptions}
+                value={sortOrderOptions.find(option => option.value === sortOrder)}
+                onChange={(selected) => {
+                if (selected) {
+                    setSortOrder(selected.value as "asc" | "desc");
+                }
+                }}
+            />
             </div>
         </div>
-    );
-};
+
+        <div className="col-12 col-lg-9">
+            {loading ? (
+            <p className="text-center text-muted">Loading...</p>
+            ) : (
+            <ul className="list-group">
+                {dayOffs.map((dayOff) => (
+                <li key={dayOff.id} className="list-group-item rounded mb-3 shadow-sm">
+                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                    <div className="mb-2 mb-md-0">
+                        <p className="mb-1">
+                            <strong>Start:</strong> {dayOff.startDate} &nbsp;|&nbsp; 
+                            <strong>End:</strong> {dayOff.endDate} &nbsp;|&nbsp; 
+                            <strong>Status:</strong> {DayOffRequestStatusLabels[dayOff.requestStatus]} &nbsp;|&nbsp; 
+                            <strong>Requested on:</strong> {new Date(dayOff.requestDate).toLocaleDateString()} &nbsp;|&nbsp; 
+                            <strong>Requested by:</strong> {dayOff.userName} {dayOff.userSurname}
+                        </p>
+                    </div>
+
+                    <div>
+                       <Button
+                            variant="success"
+                            className="me-2 mb-2 btn-sm"
+                            style={{ minWidth: "100px" }}
+                            onClick={() => handleStatusChange(dayOff.id, DayOffRequestStatus.Approved)}
+                            >
+                            Approve
+                        </Button>
+                        <Button
+                            variant="danger"
+                            className="btn-sm"
+                            style={{ minWidth: "100px" }}
+                            onClick={() => handleStatusChange(dayOff.id, DayOffRequestStatus.Rejected)}
+                            >
+                            Reject
+                        </Button>
+                    </div>
+                    </div>
+                </li>
+                ))}
+            </ul>
+            )}
+        </div>
+        </div>
+    </div>
+    )
+}
 
 export default DayOffAdminPanel;

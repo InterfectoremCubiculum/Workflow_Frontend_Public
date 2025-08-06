@@ -6,6 +6,7 @@ import type { TeamTimelineWorklogDto } from "../components/Worklogs/Timeline/Tea
 import type { GroupTimelineWorklogQueryParameters } from "../components/Worklogs/Timeline/GroupTimelineWorklogQueryParameters";
 import type { UserTimelineWorklogQueryParameters } from "../components/Worklogs/Timeline/UserTimelineWorklogQueryParameters";
 import type { WidgetSyncDto } from "../components/Worklogs/Widget/WidgetSyncDto";
+import type { ResolveActionCommand } from "../enums/ResolveActionCommand";
 
 export const StartWork = async (): Promise<void> => {
     try {
@@ -94,6 +95,17 @@ export const WidgetSync = async (): Promise<WidgetSyncDto | null> => {
         throw error;
     }
 }
+
+export const resolveActionRequest = async (timeSegmentId: number, action: ResolveActionCommand): Promise<void> => {
+  try {
+    await axiosInstance.put(`/worklog/ResolveActionRequest`, action, {
+      params: { timeSegmentId },
+    });
+  } catch (error: any) {
+    handleError('resolveActionRequest', error);
+    throw error;
+  }
+};
 
 function handleError(method: string, error: any) {
 	console.error(`Error in userService.${method}: ${error}`);

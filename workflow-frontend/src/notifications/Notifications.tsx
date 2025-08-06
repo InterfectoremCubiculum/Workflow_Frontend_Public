@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dropdown, Badge } from 'react-bootstrap';
 import { useSignalREvents } from '../hub/UseSignalREvents';
 import type { SendedNotificationDto } from './SendedNotificationDto';
@@ -6,6 +6,7 @@ import { getNotifications, markNotificationAsRead } from '../services/notificati
 import { useDebouncedCallback } from 'use-debounce';
 import moment from 'moment';
 import "./Notifications.css"
+import { useUser } from '../contexts/UserContext';
 type Notification = {
   id: number;
   title: string;
@@ -17,6 +18,9 @@ type Notification = {
 const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const pendingReadIdsRef = useRef<Set<number>>(new Set());
+
+  const { user } = useUser();
 
   const fetchNotifications = async () => {
     const sendedNotifications = await getNotifications(false);
@@ -34,14 +38,16 @@ const Notifications = () => {
     fetchNotifications();
   }, []);
 
-  const debouncedMarkAllAsRead = useDebouncedCallback(async () => {
-    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
-    if (unreadIds.length === 0) return;
+  const debouncedFlushPendingReads = useDebouncedCallback(async () => {
+    const idsToSend = Array.from(pendingReadIdsRef.current);
+    if (idsToSend.length === 0) return;
 
-    await markNotificationAsRead(unreadIds).then(() => {
-      setNotifications([]);
-    });
-
+    try {
+      await markNotificationAsRead(idsToSend);
+      pendingReadIdsRef.current.clear();
+    } catch (e) {
+      console.error("Failed to mark notifications as read", e);
+    }
   }, 5000);
 
   useSignalREvents({
@@ -53,34 +59,29 @@ const Notifications = () => {
         createdAt: data.createdAt,
         read: false,
       };
-      setNotifications(prev => [newNotification, ...prev]);
-      debouncedMarkAllAsRead();
+        setNotifications(prev => [newNotification, ...prev]);
+      },
     },
-  });
+    "group_"+(user?.role || "")
+  );
 
-  const markAsRead = async (id: number) => {
-    setNotifications(prev =>
-      prev
-        .map(n => (n.id === id ? { ...n, read: true } : n))
-        .filter(n => !n.read)
-    );
-
-
-    try {
-      await markNotificationAsRead([id]);
-    } catch (error) {
-      setNotifications(prev =>
-        prev.map(n => (n.id === id ? { ...n, read: false } : n))
-      );
+  const markAsRead = (id: number) => {
+    if (!pendingReadIdsRef.current.has(id)) {
+      pendingReadIdsRef.current.add(id);
+      debouncedFlushPendingReads();
     }
+
+    setNotifications(prev =>
+      prev.filter(n => n.id !== id)
+    );
   };
 
   const markAllAsRead = async () => {
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length === 0) return;
-    await markNotificationAsRead(unreadIds).then(() => {
-      setNotifications([]);
-    })
+    await markNotificationAsRead(unreadIds);
+    setNotifications([])
+    pendingReadIdsRef.current.clear();
   };
   
   const unreadCount = notifications.filter(n => !n.read).length;

@@ -1,13 +1,13 @@
 import { Button } from "react-bootstrap";
 import { useUser } from "../contexts/UserContext";
-import { BACKEND_BASE_URL } from "../config/environment";
 
 const UnauthorizedPage: React.FC = () => {
     const { user, isLoadingUser } = useUser();
+    const apiUrl = import.meta.env.VITE_API_URL;
 
     const handleLoginRedirect = () => {
         const currentFrontendUrl = window.location.origin + window.location.pathname;
-        window.location.href = `${BACKEND_BASE_URL}/Auth/login?redirectUri=${encodeURIComponent(currentFrontendUrl)}`;
+        window.location.href = `${apiUrl}/api/Auth/login?redirectUri=${encodeURIComponent(currentFrontendUrl)}`;
     };
 
     return (

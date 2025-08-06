@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { GetSettingDto } from "./GetSettingDto";
 import { getAppSettings, updateSettings_UserSync } from "../../../services/adminPanelService";
 import Form from "react-bootstrap/esm/Form";
-import { Button } from "react-bootstrap";
+import { Button, Card, Col, Row } from "react-bootstrap";
 import type { UpdatedSettingDto } from "./UpdatedSettingDto";
 import { ListOfSettingsKey } from "../../../enums/ListOfSettingsKey";
 import { userSync } from "../../../services/userService";
@@ -107,97 +107,126 @@ const UserSynch: React.FC = () => {
     };
 
     return (
-        <div>
-            <h3>User synchronization</h3>
-            <p>You can manually synchronize user data.</p>
-            <Button variant="primary" onClick={handleSync}>
-                Synchronize users
-            </Button>
-            <hr/>            
-            <Form onSubmit={handleSubmit} className="p-4">
-               <Form.Group className="mb-3">
+        <Card className="p-4 shadow-sm">
+            <Card.Title>User Synchronization</Card.Title>
+            <Card.Subtitle className="mb-3 text-muted">
+                You can manually or automatically synchronize user data.
+            </Card.Subtitle>
+
+            <div className="mb-4">
+                <Button variant="primary" onClick={handleSync}>
+                    Synchronize Now
+                </Button>
+            </div>
+
+            <hr />
+
+            <Form onSubmit={handleSubmit}>
+                <Form.Group className="mb-4">
                     <Form.Check
                         type="checkbox"
                         label="Enable automatic user synchronization"
                         checked={userSyncEnabled?.value.toLowerCase() === "true"}
-                        onChange={(e) => handleChange(ListOfSettingsKey.user_sync_enabled, e.target.checked.toString())}
+                        onChange={(e) =>
+                            handleChange(
+                                ListOfSettingsKey.user_sync_enabled,
+                                e.target.checked.toString()
+                            )
+                        }
                     />
                 </Form.Group>
 
                 {userSyncEnabled?.value.toLowerCase() === "true" && (
-                    <>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Frequency</Form.Label>
-                            <Form.Select
-                                value={userSyncFrequency?.value || ""}
-                                onChange={(e) => handleChange(ListOfSettingsKey.user_sync_frequency, e.target.value)}
-                            >
-                                <option value="">-- Select frequency --</option>
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </Form.Select>
-                        </Form.Group>
+                    <Row className="g-3">
+                        <Col md={6}>
+                            <Form.Group>
+                                <Form.Label>Frequency</Form.Label>
+                                <Form.Select
+                                    value={userSyncFrequency?.value || ""}
+                                    onChange={(e) =>
+                                        handleChange(ListOfSettingsKey.user_sync_frequency, e.target.value)
+                                    }
+                                >
+                                    <option value="">-- Select frequency --</option>
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Time of day</Form.Label>
-                            <Form.Control
-                                type="time"
-                                value={userSyncTimeOfDay?.value || ""}
-                                onChange={(e) => handleChange(ListOfSettingsKey.user_sync_time_of_day, e.target.value)}
-                            />
-                        </Form.Group>
-                        {userSyncFrequency?.value === "weekly" && (
-                            <Form.Group className="mb-3">
-                                <Form.Label>Days of week</Form.Label>
-                                <Select
-                                    isMulti
-                                    options={[
-                                        { value: "Sunday", label: "Sunday" },
-                                        { value: "Monday", label: "Monday" },
-                                        { value: "Tuesday", label: "Tuesday" },
-                                        { value: "Wednesday", label: "Wednesday" },
-                                        { value: "Thursday", label: "Thursday" },
-                                        { value: "Friday", label: "Friday" },
-                                        { value: "Saturday", label: "Saturday" }
-                                    ]}
-                                    value={(userSyncDaysOfWeek?.value || "")
-                                        .split(",")
-                                        .filter(Boolean)
-                                        .map(day => ({ value: day, label: day }))}
-                                    onChange={(selected) =>
-                                        handleChange(
-                                            ListOfSettingsKey.user_sync_days_of_week,
-                                            selected.map(opt => opt.value).join(",")
-                                        )
+                        <Col md={6}>
+                            <Form.Group>
+                                <Form.Label>Time of Day</Form.Label>
+                                <Form.Control
+                                    type="time"
+                                    value={userSyncTimeOfDay?.value || ""}
+                                    onChange={(e) =>
+                                        handleChange(ListOfSettingsKey.user_sync_time_of_day, e.target.value)
                                     }
                                 />
                             </Form.Group>
-                        )}
+                        </Col>
 
+                        {userSyncFrequency?.value === "weekly" && (
+                            <Col md={12}>
+                                <Form.Group>
+                                    <Form.Label>Days of Week</Form.Label>
+                                    <Select
+                                        isMulti
+                                        options={[
+                                            { value: "Sunday", label: "Sunday" },
+                                            { value: "Monday", label: "Monday" },
+                                            { value: "Tuesday", label: "Tuesday" },
+                                            { value: "Wednesday", label: "Wednesday" },
+                                            { value: "Thursday", label: "Thursday" },
+                                            { value: "Friday", label: "Friday" },
+                                            { value: "Saturday", label: "Saturday" }
+                                        ]}
+                                        value={(userSyncDaysOfWeek?.value || "")
+                                            .split(",")
+                                            .filter(Boolean)
+                                            .map(day => ({ value: day, label: day }))}
+                                        onChange={(selected) =>
+                                            handleChange(
+                                                ListOfSettingsKey.user_sync_days_of_week,
+                                                selected.map(opt => opt.value).join(",")
+                                            )
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
+                        )}
 
                         {userSyncFrequency?.value === "monthly" && (
-                            <Form.Group className="mb-3">
-                                <Form.Label>Day of month</Form.Label>
-                                <Form.Control
-                                    type="number"
-                                    min={1}
-                                    max={28}
-                                    value={userSyncDayOfMonth?.value || ""}
-                                    onChange={(e) => handleChange(ListOfSettingsKey.user_sync_day_of_month, e.target.value)}
-                                />
-                            </Form.Group>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label>Day of Month</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        min={1}
+                                        max={28}
+                                        value={userSyncDayOfMonth?.value || ""}
+                                        onChange={(e) =>
+                                            handleChange(ListOfSettingsKey.user_sync_day_of_month, e.target.value)
+                                        }
+                                    />
+                                </Form.Group>
+                            </Col>
                         )}
-                    </>
+                    </Row>
                 )}
-                <Button variant="primary" type="submit" className="mt-3 me-1">
-                    Submit
-                </Button>
-                <Button variant="danger" type="button" onClick={() => fetchSettings()} className="mt-3 ms-1">
-                    Cancel
-                </Button>
+
+                <div className="mt-4 d-flex justify-content-end">
+                    <Button variant="primary" type="submit" className="me-2">
+                        Save
+                    </Button>
+                    <Button variant="secondary" type="button" onClick={fetchSettings}>
+                        Cancel
+                    </Button>
+                </div>
             </Form>
-        </div>
+        </Card>
     );
 };
 

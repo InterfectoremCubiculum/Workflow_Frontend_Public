@@ -29,7 +29,17 @@ const DayOffsManager: React.FC = () => {
         from: new Date(new Date().getFullYear(), 0, 1),
         to: new Date(new Date().getFullYear(), 11, 31),
     });
-    const [selectedStatuses, setSelectedStatuses] = useState<DayOffRequestStatus[]>([DayOffRequestStatus.Approved]);
+    const [selectedStatuses, setSelectedStatuses] = useState<DayOffRequestStatus[]>
+    (
+        [
+            DayOffRequestStatus.Approved,
+            DayOffRequestStatus.Pending,
+            DayOffRequestStatus.Rejected,
+            DayOffRequestStatus.Cancelled,
+            DayOffRequestStatus.Expired,
+            DayOffRequestStatus.Completed,
+        ]
+    );
     const statusOptions = Object.keys(DayOffRequestStatus).map((key) => ({
         value: key as DayOffRequestStatus,
         label: key,

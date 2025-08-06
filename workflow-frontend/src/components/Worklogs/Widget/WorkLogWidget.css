@@ -4,10 +4,19 @@
   right: 20px;
   z-index: 9999;
   background-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  width: 240px;
-  opacity: 0.5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  width: 260px;
+  opacity: 0.9;
 }
+
 .widget:hover {
   opacity: 1;
+}
+
+.widget-minimized {
+  width: 130px !important;
+  height: auto;
+  padding: 10px !important;
 }

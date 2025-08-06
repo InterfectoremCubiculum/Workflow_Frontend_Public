@@ -14,7 +14,6 @@ export const getAppSettings = async (): Promise<GetSettingDto[]> => {
 
 export const updateAppSettings = async (settings: UpdatedSettingDto[]): Promise<void> => {
     try {
-        console.log('updateAppSettings response:', settings);
         const response = await axiosInstance.post(`/AdminPanel/Settings`, settings);
         return response.data;
     } catch (error: any) {

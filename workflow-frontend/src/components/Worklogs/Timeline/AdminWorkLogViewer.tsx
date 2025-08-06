@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ProjectTimelineWorklog, TeamTimelineWorklog, UsersTimelineWorklog } from "../../../services/workLogService";
 import UserManySelecting from "../../Searchings/UserSearching/UserManySelecting";
-import Timeline from "react-calendar-timeline";
+import Timeline, { TodayMarker } from "react-calendar-timeline";
 import moment from "moment";
 import { TimeSegmentType } from "../../../enums/TimeSegmentType";
 import type { GetSearchedUserDto } from "../../Searchings/UserSearching/GetSearchedUserDto";
@@ -19,6 +19,7 @@ import { getUsersInProject } from "../../../services/projectService";
 import { getUsersInTeam } from "../../../services/teamService";
 import TimeLineLegend from "./TimeLineLegend";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import EditTimeSegmentModal from "./EditTimeSegmentModal";
 
 type FilterType = "user" | "team" | "project";
 
@@ -33,6 +34,9 @@ const AdminWorkLogViewer: React.FC = () => {
     
     const [selectedUsers, setSelectedUsers] = useState<GetSearchedUserDto[]>([]);
     const [usersInfo, setUsersInfo] = useState<GetSearchedUserDto[]>([]);
+
+    const [showModal, setShowModal] = useState(false);
+    const [selectedSegment, setSelectedSegment] = useState<UsersTimelineWorklogDto | null>(null);
 
     const [paramsGuid, setParamsGuid] = useState<UserTimelineWorklogQueryParameters>({
         dateFrom: moment().startOf('month').format("YYYY-MM-DD"),
@@ -202,6 +206,7 @@ const AdminWorkLogViewer: React.FC = () => {
         const groupId = userGuidToGroupIdMap.get(segment.userId) ?? 1;
 
         let backgroundColor = 'lightgreen';
+        let border = '';
         if (segment.timeSegmentType === TimeSegmentType.Break) {
             backgroundColor = 'lightcoral';
         }
@@ -209,12 +214,14 @@ const AdminWorkLogViewer: React.FC = () => {
             backgroundColor = '#ffd966';
         }
 
-        // Obliczanie czasu trwania
+        if (segment.requestAction) {
+            border = '3px solid #49d7f3'; 
+        }
         const duration = moment.duration(end.diff(start));
         const durationString = `${Math.floor(duration.asHours())}h ${duration.minutes()}m ${duration.seconds()}s`;
 
         return {
-            id: `${segment.userId}-${index}`, // Unikalne ID, bo index może być ten sam dla różnych użytkowników
+            id: `${segment.userId}-${index}`,
             group: groupId,
             title: segment.timeSegmentType === TimeSegmentType.Break ? 'Break' : 'Work',
             start_time: start,
@@ -222,9 +229,9 @@ const AdminWorkLogViewer: React.FC = () => {
             itemProps: {
                 style: {
                     background: backgroundColor,
+                    border: border,
                 },
             },
-            // 🚀 DODATKOWE DANE DLA TOOLTIPA
             originalSegment: segment,
             displayStartTime: start.format('HH:mm:ss'),
             displayEndTime: end.format('HH:mm:ss'),
@@ -255,7 +262,7 @@ const AdminWorkLogViewer: React.FC = () => {
                         style: {
                             background: item.itemProps.style.background,
                             color: 'black',
-                            border: '1px solid ' + item.itemProps.style.background,
+                            border: item.itemProps.style.border,
                             borderRadius: '4px',
                             textAlign: 'center',
                             fontSize: '0.85em',
@@ -267,6 +274,11 @@ const AdminWorkLogViewer: React.FC = () => {
                             height: itemContext.dimensions.height,
                         },
                     })}
+                    onClick={() => {
+                        const segment = items.find(i => i.id === item.id);
+                        setSelectedSegment(segment?.originalSegment ?? null);
+                        setShowModal(true);
+                    }}
                 >
                     <div style={{
                         overflow: 'hidden',
@@ -340,12 +352,29 @@ const AdminWorkLogViewer: React.FC = () => {
                 canResize={false}
                 canSelect={false}
                 itemRenderer={itemRenderer}
-            />
+            >
+                <TodayMarker />
+            </Timeline>
         </div>
         <div className="mt-3 d-flex justify-content-center">
             <TimeLineLegend />
         </div>
+        {showModal && selectedSegment && (
+            <EditTimeSegmentModal
+                segment={selectedSegment}
+                onClose={() => {
+                    setShowModal(false);
+                    setSelectedSegment(null);
+                }}
+                onActionResolved={() => {
+                    setSelectedSegment(null);
+                    fetchWorkLogs(); 
+                }}
+            />
+
+        )}
+        
     </>
-)
+    )
 }
 export default AdminWorkLogViewer;

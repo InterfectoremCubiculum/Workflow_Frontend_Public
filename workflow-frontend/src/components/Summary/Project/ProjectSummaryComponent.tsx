@@ -4,113 +4,85 @@ import {
   createColumnHelper,
   getCoreRowModel,
   getSortedRowModel,
-  flexRender,
   type SortingState,
 } from "@tanstack/react-table";
-import { getCSVWorkSummary, getProjectsWorkSummary } from "../../../services/summaryService";
-import { Button } from "react-bootstrap";
+import {getProjectsWorkSummary } from "../../../services/summaryService";
+import { Button, Form } from "react-bootstrap";
 import type { UserWorkSummaryDto } from "../UserWorkSummaryDto";
 import type { GetSearchedProjectDto } from "../../Searchings/ProjectSearching/GetSearchedProjectDto";
 import type { ProjectsWorkSummaryQueriesParameters } from "./ProjectsWorkSummaryQueriesParameters";
 import ProjectManySelecting from "../../Searchings/ProjectSearching/ProjectManySelecting";
 import moment from "moment";
+import type { WorkSummaryQueriesParameters } from "../User/UserWorkSummaryQueriesParameters";
+import { dayByDayColumnsMaker, downloadCSV, summaryColumnsMaker } from "../SummaryUtilits";
+import { RenderTable } from "../RenderTable";
+import type { UserWorkSummaryDayByDayDto } from "../UserWorkSummaryDayByDayDto";
 
 const ProjectSummaryComponent: React.FC = () => {
   const [selectedProjects, setSelectedProjects] = useState<GetSearchedProjectDto[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [data, setData] = useState<UserWorkSummaryDto[]>([]);
+  const [fetchedData, setFetchedData] = useState<UserWorkSummaryDto[] | UserWorkSummaryDayByDayDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [startDate, setStartDate] = useState(moment().startOf("year").format("YYYY-MM-DD"));
-  const [endDate, setEndDate] = useState(moment().endOf("year").format("YYYY-MM-DD"));
-  const [message, setMessage] = useState<string | null>(null);
-  const [token, setToken] = useState<string>("");
+  const [startDate, setStartDate] = useState(moment().startOf("month").format("YYYY-MM-DD"));
+  const [endDate, setEndDate] = useState(moment().endOf("day").format("YYYY-MM-DD"));
+  const [isDayByDay, setIsDayByDay] = useState(true);
+  const [fetchedByDayDayStatus, setFetchedByDayDayStatus] = useState<boolean>(true);
 
   const fetchProjectSummary = async () => {
-    if (selectedProjects.length === 0) {
-      setMessage("Please select at least one project.");
-      return;
-    }
-
-    const params: ProjectsWorkSummaryQueriesParameters = {
-      periodStart: new Date(startDate),
-      periodEnd: new Date(endDate),
-      projectIds: selectedProjects.map(p => p.id),
-    };
-
+    const params = handleSetParams();
     setIsLoading(true);
     try {
-      const res = await getProjectsWorkSummary(params);
-      if (!res.summary || res.summary.length === 0) {
-        setMessage("No users assigned to the selected projects.");
-        setData([]);
-        return;
-      }
-
-      setData(res.summary);
-      setToken(res.token);
-      setMessage(null);
+      const data = await getProjectsWorkSummary(params);
+      setFetchedByDayDayStatus(params.isDayByDay);
+      setFetchedData(data);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleFindClick = () => {
-    if (selectedProjects.length > 0) {
-      fetchProjectSummary();
-    } else {
-      alert("Please select at least one project.");
-    }
+    fetchProjectSummary();
   };
 
-  const columnHelper = createColumnHelper<UserWorkSummaryDto>();
-  const columns = useMemo(() => [
-    columnHelper.accessor(row => `${row.name} ${row.surname}`, {
-      id: 'user',
-      header: 'User',
-      cell: info => info.getValue(),
-    }),
-    columnHelper.accessor('projectName', {
-      header: 'Project',
-      cell: info => info.getValue() ?? '-',
-    }),
-    columnHelper.accessor('teamName', {
-      header: 'Team',
-      cell: info => info.getValue() ?? '-',
-    }),
-    columnHelper.accessor('totalWorkHours', {
-      header: 'Sum work hours',
-      cell: info => `${info.getValue()} d.h:m:s`,
-    }),
-    columnHelper.accessor('totalBreakHours', {
-      header: 'Sum break hours',
-      cell: info => `${info.getValue()} d.h:m:s`,
-    }),
-    columnHelper.accessor('totalDaysWorked', {
-      header: 'Days worked',
-    }),
-    columnHelper.accessor('totalDaysOff', {
-      header: 'Days off',
-    }),
-  ], []);
+  const handleSetParams = ()  => {
+    const params: ProjectsWorkSummaryQueriesParameters = {
+      periodStart: new Date(startDate),
+      periodEnd: new Date(endDate),
+      projectIds: selectedProjects.map(project => project.id),
+      isDayByDay: isDayByDay,
+    };
+    return params;
+  }
 
-  const handleDownload = async (token: string) => {
-    try {
-      const csvUrl = await getCSVWorkSummary(token);
-      const link = document.createElement("a");
-      link.href = csvUrl;
-      link.download = "work_summary.csv";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(csvUrl);
-    } catch {
-      // optionally show error
+
+  const handleDownload = async () => {
+    const params = handleSetParams();
+    const csvParams: WorkSummaryQueriesParameters = {
+      periodStart: params?.periodStart ?? new Date(startDate),
+      periodEnd: params?.periodEnd ?? new Date(endDate),
+      userIds: fetchedData.map(user => user.userId),
+      isDayByDay: params?.isDayByDay ?? isDayByDay,
     }
+    await downloadCSV(csvParams);
   };
 
-  const table = useReactTable({
-    data,
-    columns,
+  const columnHelperDay = createColumnHelper<UserWorkSummaryDayByDayDto>();
+  const columnHelperSummary = createColumnHelper<UserWorkSummaryDto>();
+  const dayByDayColumns = useMemo(() => dayByDayColumnsMaker(columnHelperDay), [columnHelperDay]);
+  const summaryColumns = useMemo(() => summaryColumnsMaker(columnHelperSummary), [columnHelperSummary]);
+  
+  const dayByDayTable = useReactTable<UserWorkSummaryDayByDayDto>({
+    data: fetchedByDayDayStatus ? fetchedData as UserWorkSummaryDayByDayDto[] : [],
+    columns: dayByDayColumns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+  
+  const summaryTable = useReactTable<UserWorkSummaryDto>({
+    data: !fetchedByDayDayStatus ? fetchedData as UserWorkSummaryDto[] : [],
+    columns: summaryColumns,
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
@@ -119,7 +91,7 @@ const ProjectSummaryComponent: React.FC = () => {
 
   return (
     <div>
-      <div style={{ width: "80vw" }}>
+      <div style={{ width: '80vw' }}>
         <ProjectManySelecting onProjectSelect={setSelectedProjects} />
         <div className="d-flex mb-3 align-items-end flex-wrap mt-3">
           <div className="me-2">
@@ -131,7 +103,7 @@ const ProjectSummaryComponent: React.FC = () => {
               onChange={e => setStartDate(e.target.value)}
             />
           </div>
-          <div className="ms-2 me-5">
+          <div className="ms-2 me-3">
             <label className="form-label">End date</label>
             <input
               type="date"
@@ -140,52 +112,25 @@ const ProjectSummaryComponent: React.FC = () => {
               onChange={e => setEndDate(e.target.value)}
             />
           </div>
-          <Button className="ms-auto" onClick={handleFindClick}>Find</Button>
+          <Form.Check
+            type="switch"
+            label="Day by Day"
+            checked={isDayByDay}
+            onChange={e => setIsDayByDay(e.target.checked)}
+          />
+          <div className="ms-auto">
+            <Button onClick={handleDownload}>Download CSV</Button>
+            <Button className="ms-2" onClick={handleFindClick}>Find</Button>
+          </div>
         </div>
       </div>
-
-      <div style={{ width: "80vw" }}>
-        {data.length > 0 && !isLoading ? (
+      <div style={{ width: '80vw' }}>
+        {fetchedData.length > 0 && !isLoading ? (
           <>
-            <table className="table table-bordered table-hover mt-4">
-              <thead>
-                {table.getHeaderGroups().map(headerGroup => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map(header => (
-                      <th
-                        key={header.id}
-                        style={{ cursor: header.column.getCanSort() ? "pointer" : "default", userSelect: "none", whiteSpace: "nowrap" }}
-                        onClick={header.column.getToggleSortingHandler()}
-                        title={header.column.getCanSort() ? "Click to sort" : undefined}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        <span style={{ marginLeft: "6px" }}>
-                          {header.column.getIsSorted() === "asc" ? "▲" :
-                           header.column.getIsSorted() === "desc" ? "▼" : "⇅"}
-                        </span>
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map(row => (
-                  <tr key={row.id}>
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {token && <Button onClick={() => handleDownload(token)}>Download CSV</Button>}
+            {fetchedByDayDayStatus ? <RenderTable table={dayByDayTable} /> : <RenderTable table={summaryTable} />}
           </>
         ) : (
-          <p className="mt-3 text-warning">
-            {message ?? "Please select a project to view the summary."}
-          </p>
+          <p className="mt-3 text-warning">Click Find button to load data</p>
         )}
       </div>
     </div>

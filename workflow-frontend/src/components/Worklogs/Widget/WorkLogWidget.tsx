@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect } from "react";
 import { TimeSegmentType } from "../../../enums/TimeSegmentType";
-import { Button } from "react-bootstrap";
+import { Badge, Button } from "react-bootstrap";
 import { EndWork, ResumeWork, StartBreak, StartWork, WidgetSync } from "../../../services/workLogService";
 import "./WorkLogWidget.css";
-import { ChevronDown, ChevronUp } from "react-bootstrap-icons";
+import { ChevronDown, ChevronUp, Clock } from "react-bootstrap-icons";
 
 interface TimeTrackerWidgetProps {
   signalRStatus: (TimeSegmentType | null);
@@ -89,13 +89,13 @@ export default function TimeTrackerWidget({signalRStatus, timeStamp} : TimeTrack
     });
   };
 
-  const handleEnd = async () => {
-    if (status === TimeSegmentType.Work) {
+  const handleEnd = async (state: TimeSegmentType) => {
+    if (state === TimeSegmentType.Work) {
       await EndWork().then(() => {
         setStatus(null);
         setStartTime(null);
       });
-    } else if (status === TimeSegmentType.Break) {
+    } else if (state === TimeSegmentType.Break) {
       await ResumeWork().then(() => {
         setStatus(TimeSegmentType.Work);
         setStartTime(new Date());
@@ -108,37 +108,34 @@ export default function TimeTrackerWidget({signalRStatus, timeStamp} : TimeTrack
   };
 
   return (
-    <div
-      className="widget p-3 border rounded"
-      style={{ width: isMinimized ? "130px" : "auto" }}
-    >
+    <div className={`widget p-3 ${isMinimized ? "widget-minimized" : "rounded"}`}>
       <div className="d-flex justify-content-between align-items-center">
-        <h5 className="m-0">
-          Status:{" "}
-          <span
-            style={{
-              color:
-                status === TimeSegmentType.Work
-                  ? "green"
-                  : status === TimeSegmentType.Break
-                  ? "orange"
-                  : "gray",
-            }}
-          >
-            {status === TimeSegmentType.Work
-              ? "Working"
-              : status === TimeSegmentType.Break
-              ? "On the Break"
-              : "Offline"}
-          </span>
-        </h5>
+        <div className="d-flex align-items-center gap-2">
+          <Clock />
+          <h6 className="m-0">
+            <span>Status:</span>{" "}
+            <Badge bg={
+              status === TimeSegmentType.Work
+                ? "success"
+                : status === TimeSegmentType.Break
+                ? "warning"
+                : "secondary"
+            }>
+              {status === TimeSegmentType.Work
+                ? "Working"
+                : status === TimeSegmentType.Break
+                ? "On Break"
+                : "Offline"}
+            </Badge>
+          </h6>
+        </div>
         <Button
-          className="ms-1 p-0 d-flex align-items-center justify-content-center"
           variant="link"
           size="sm"
           onClick={toggleMinimize}
-          aria-label={isMinimized ? "Rozwiń widget" : "Zminimalizuj widget"}
+          className="p-0 ms-2"
           style={{ width: "28px", height: "28px" }}
+          aria-label={isMinimized ? "Expand widget" : "Minimize widget"}
         >
           {isMinimized ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </Button>
@@ -148,35 +145,43 @@ export default function TimeTrackerWidget({signalRStatus, timeStamp} : TimeTrack
         <>
           {startTime && (
             <>
-              <p className="mb-1">
-                Start: <strong>{formatTime(startTime)}</strong>
-              </p>
-              <p className="mb-1">
-                Time elapsed: <strong>{formatElapsedTime(elapsedTime)}</strong>
-              </p>
+              <hr className="my-2" />
+              <div className="small text-muted">
+                <p className="mb-1">
+                  <strong>Started:</strong> {formatTime(startTime)}
+                </p>
+                <p className="mb-1">
+                  <strong>Elapsed:</strong> {formatElapsedTime(elapsedTime)}
+                </p>
+              </div>
             </>
           )}
 
-          <div className="d-flex flex-column gap-2 mt-3">
+          <div className="d-grid gap-2 mt-3">
             {status === null && (
-              <Button onClick={handleStartWork} variant="primary">
-                Start a Work
+              <Button onClick={handleStartWork} variant="primary" size="sm">
+                Start Work
               </Button>
             )}
             {status === TimeSegmentType.Work && (
               <>
-                <Button onClick={handleStartBreak} variant="warning">
+                <Button onClick={handleStartBreak} variant="warning" size="sm">
                   Take a Break
                 </Button>
-                <Button onClick={handleEnd} variant="danger">
-                  End a Work
+                <Button onClick={() => handleEnd(TimeSegmentType.Work)} variant="danger" size="sm">
+                  End Work
                 </Button>
               </>
             )}
             {status === TimeSegmentType.Break && (
-              <Button onClick={handleEnd} variant="success">
-                Go back to work
-              </Button>
+              <>
+                <Button onClick={() => handleEnd(TimeSegmentType.Break)} variant="success" size="sm">
+                  Resume Work
+                </Button>
+                <Button onClick={() => handleEnd(TimeSegmentType.Work)} variant="danger" size="sm">
+                  End Work
+                </Button>
+              </>
             )}
           </div>
         </>

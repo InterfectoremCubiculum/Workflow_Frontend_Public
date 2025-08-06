@@ -7,6 +7,7 @@ import type { CalendarDayOffsRequestQueryParameters } from "./CalendarDayOffsReq
 import UserSearch from "../../Searchings/UserSearching/UserSearch";
 import type { GetCalendarDayOffDto } from "./GetCalendarDayOffDto";
 import { calendarColorDayOff } from "./CalendarColors";
+import { DayOffRequestStatus } from "../../../enums/DayOffRequestStatus";
 
 const locales = {
   'en-US': enUS,
@@ -33,8 +34,13 @@ const DayOffsViewer: React.FC = () => {
                 from: dateRange.from.toISOString().split('T')[0],
                 to: dateRange.to.toISOString().split('T')[0],
                 userId: choosenUser,
-                dayOffRequestStatuses: ["Approved"]
-            })
+                dayOffRequestStatuses: [
+                    DayOffRequestStatus.Approved,
+                    DayOffRequestStatus.Completed,
+                    DayOffRequestStatus.Pending,
+                    DayOffRequestStatus.Cancelled,
+                ]
+        })
         }
     }, [choosenUser, dateRange]);
 

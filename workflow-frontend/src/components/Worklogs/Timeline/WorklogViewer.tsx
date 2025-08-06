@@ -1,4 +1,4 @@
-import Timeline from "react-calendar-timeline";
+import Timeline, { TodayMarker } from "react-calendar-timeline";
 import moment from "moment";
 import type { GetTimeSegmentDto } from "../GetTimeSegmentDto";
 import { useEffect, useRef, useState } from "react";
@@ -173,7 +173,9 @@ const WorkLogViewer: React.FC = () => {
                 canResize={false}
                 canSelect={false}
                 itemRenderer={itemRenderer}
-            />
+            >
+                <TodayMarker />
+            </Timeline>
             <div className="mt-3 d-flex justify-content-center">
                 <TimeLineLegend />
             </div>

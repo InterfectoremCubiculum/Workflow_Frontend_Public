@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-bootstrap";
-import UserSummaryComponent from "./User/UserSummaryComponent";
+import UserSummaryComponent from "./User/WorkSummaryQueriesParameters";
 import TeamsSummaryComponent from "./Team/TeamSummaryComponent";
 import ProjectSummaryComponent from "./Project/ProjectSummaryComponent";
 
